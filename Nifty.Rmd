@@ -1,0 +1,51 @@
+---
+title: "Predicting CNX Nifty Index for 14th March,2016"
+author: "Shubhankar Gupta"
+date: "March 8, 2016"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+I have used an ARIMA model to do the time series analysis and predicting the required value.
+
+Loading the data from Yahoo finance for CNX Nifty from 3rd September,2015 to 4th March,2016
+```{r}
+suppressWarnings(suppressMessages(library(quantmod)))
+from.dat = as.Date("09/03/15", format= "%m/%d/%y")
+to.dat = as.Date("03/04/16", format= "%m/%d/%y")
+suppressWarnings(suppressMessages(getSymbols("^NSEI",src = "yahoo", from= from.dat, to= to.dat)))
+head(NSEI,2)
+```
+
+Using Only Closing Value for our Analysis.
+```{r}
+nseiclose = Cl(NSEI)
+```
+
+Converting NSEI into time series class. I further used a difference form of the time series in order to obtain the autocorrelation.  
+```{r}
+ts1 = ts(nseiclose,frequency = 1)
+plot(ts1)
+ts1diff = diff(ts1,differences = 2)
+plot.ts(ts1diff)
+```
+
+I plotted the autocorrelation and partial autocorrelation funtion.
+```{r}
+acf(ts1diff,lag.max = 20)
+pacf(ts1diff,lag.max = 20)
+```
+Since the correlogram tails off to zero after lag 3, and the partial correlogram is zero after lag 2, the following ARMA models are possible for the time series:
+
+- an ARMA(2,0) model, since the partial autocorrelogram is zero after lag 2, and the correlogram tails off to zero after lag 3, and the partial correlogram is zero after lag 2.
+- an ARMA(0,1) model, since the autocorrelogram is zero after lag 1, and the partial correlogram tails off to zero.
+The ARMA(2,0) model has 2 parameters, the ARMA(0,1) model has 1 parameters. Using principle of parsimony we select ARMA(0,1) and thus ARIMA(0,2,1), since d=2.  
+```{r}
+suppressMessages(suppressWarnings(library(forecast)))
+fcastarima = arima(ts1,order = c(0,2,1))
+fcastarimaforecast = forecast.Arima(fcastarima,h=5)
+plot(fcastarimaforecast)
+fcastarimaforecast
+```
+Last forecast corresponds to the prediction for 14th March.
